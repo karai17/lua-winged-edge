@@ -10,10 +10,11 @@ function Edge:init(v1, v2)
 end
 
 function Edge:addFace(face, prev, next)
-	self.faces[face] = {
+	table.insert(self.faces, {
+		face = face,
 		prev = prev, -- previous edge
 		next = next, -- next edge
-	}
+	})
 end
 
 return Edge

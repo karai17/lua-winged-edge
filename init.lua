@@ -30,7 +30,7 @@ local path = ... .. "."
 local external = path .. "external."
 local WE = {}
 
-WE.version = "0.0.3"
+WE.version = "0.0.4"
 
 local Vertex = require(path .. "vertex")
 local Edge = require(path .. "edge")
@@ -62,7 +62,7 @@ function WE.parseFaces(object, we_vertices)
 	local faces = {}
 	local we_edges = {}
 
-	for _, f in ipairs(object.f) do
+	for k, f in ipairs(object.f) do
 		local vertices = {}
 		local edges = {}
 		
@@ -79,7 +79,7 @@ function WE.parseFaces(object, we_vertices)
 			end
 
 			table.insert(vertices, v1)
-			local edge = Edge(we_vertices[v1], we_vertices[v2])
+			local edge = Edge(v1, v2)
 
 			for k, e in ipairs(we_edges) do
 				if (
@@ -101,8 +101,7 @@ function WE.parseFaces(object, we_vertices)
 			end
 		end
 
-		local face = Face(vertices, edges)
-		table.insert(faces, face)
+		table.insert(faces, Face(vertices, edges))
 
 		for i=1, #edges do
 			local prev, next
@@ -119,29 +118,34 @@ function WE.parseFaces(object, we_vertices)
 				next = edges[i+1]
 			end
 
-			we_edges[edges[i]]:addFace(face, prev, next)
+			we_edges[edges[i]]:addFace(k, prev, next)
 		end
 	end
 
-	for _, e in ipairs(we_edges) do
+	for i, e in ipairs(we_edges) do
 		for _, v in pairs(e.vertices) do
-			v:addEdge(e)
+			we_vertices[v]:addEdge(i)
 		end
 	end
 
 	return we_edges, faces
 end
 
-function WE.traverse(face)
+function WE.traverse(face, faces, edges)
 	local adj = {}
-	local first = face.edges[1]
+	local first = faces[face].edges[1]
+	local n = 0
 
 	local function next(edge)
-		for f in pairs(edge.faces) do
-			if f ~= face then table.insert(adj, f) end
+		for k, f in pairs(edges[edge].faces) do
+			if f.face == face then
+				n = k
+			else
+				table.insert(adj, f.face)
+			end
 		end
 
-		return edge.faces[face].next
+		return edges[edge].faces[n].next
 	end
 
 	local edge = next(first)
