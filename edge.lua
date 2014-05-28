@@ -10,11 +10,10 @@ function Edge:init(v1, v2)
 end
 
 function Edge:addFace(face, prev, next)
-	local f = {
+	self.faces[face] = {
 		prev = prev, -- previous edge
 		next = next, -- next edge
 	}
-	self.faces[face] = f
 end
 
 return Edge

@@ -29,12 +29,13 @@ local path = ... .. "."
 local external = path .. "external."
 local WE = {}
 
-WE.version = "0.0.2"
+WE.version = "0.0.3"
 
 local Vertex = require(path .. "vertex")
 local Edge = require(path .. "edge")
 local Face = require(path .. "face")
 local obj_loader = require(external .. "obj_loader")
+local Vec3 = require(external .. "hump.vector3d")
 
 function WE.new(file)
 	local object = obj_loader.load(file)
@@ -50,7 +51,7 @@ function WE.parseVertices(object)
 	local vertices = {}
 
 	for _, v in ipairs(object.v) do
-		table.insert(vertices, Vertex(v.x, v.y, v.z))
+		table.insert(vertices, Vertex(Vec3(v.x, v.y, v.z)))
 	end
 
 	return vertices
@@ -165,6 +166,49 @@ function WE.triangulate(face)
 	end
 
 	return triangles
+end
+
+function WE.intersect(p, d, triangle)
+	assert(#triangle == 3)
+
+	local h, s, q = Vec3(), Vec3(), Vec3()
+	local a, f, u, v
+
+	local e1 = triangle[2] - triangle[1]
+	local e2 = triangle[3] - triangle[1]
+
+	h = d:clone():cross(e2)
+
+	a = (e1*h) -- dot product
+
+	if a > -0.00001 and a < 0.00001 then
+		return false
+	end
+
+	f = 1/a
+	s = p - triangle[1]
+	u = f * (s*h)
+
+	if u < 0 or u > 1 then
+		return false
+	end
+
+	q = s:clone():cross(e1)
+	v = f * (d*q)
+
+	if v < 0 or u + v > 1 then
+		return false
+	end
+
+	-- at this stage we can compute t to find out where
+	-- the intersection point is on the line
+	t = f * (e2*q)
+
+	if t > 0.00001 then
+		return true -- we've got a hit!
+	else
+		return false -- the line intersects, but it's behind the point
+	end
 end
 
 return WE
