@@ -4,7 +4,8 @@ local Class = require(external .. "hump.class")
 
 local Face = Class {}
 
-function Face:init(edges)
+function Face:init(vertices, edges)
+	self.vertices = vertices
 	self.edges = edges
 end
 

@@ -29,7 +29,7 @@ local path = ... .. "."
 local external = path .. "external."
 local WE = {}
 
-WE.version = "0.0.1"
+WE.version = "0.0.2"
 
 local Vertex = require(path .. "vertex")
 local Edge = require(path .. "edge")
@@ -61,6 +61,7 @@ function WE.parseFaces(object, we_vertices)
 	local we_edges = {}
 
 	for _, f in ipairs(object.f) do
+		local vertices = {}
 		local edges = {}
 		
 		for i=1, #f do
@@ -75,9 +76,10 @@ function WE.parseFaces(object, we_vertices)
 				v2 = f[i+1].v
 			end
 
+			table.insert(vertices, v1)
 			local edge = Edge(we_vertices[v1], we_vertices[v2])
 
-			for _, e in ipairs(we_edges) do
+			for k, e in ipairs(we_edges) do
 				if (
 					e.vertices[1] == edge.vertices[1] and
 					e.vertices[2] == edge.vertices[2]
@@ -86,18 +88,18 @@ function WE.parseFaces(object, we_vertices)
 					e.vertices[2] == edge.vertices[1]
 				) then
 					found = true
-					table.insert(edges, e)
+					table.insert(edges, k)
 					break
 				end
 			end
 
 			if not found then
-				table.insert(edges, edge)
 				table.insert(we_edges, edge)
+				table.insert(edges, #we_edges)
 			end
 		end
 
-		local face = Face(edges)
+		local face = Face(vertices, edges)
 		table.insert(faces, face)
 
 		for i=1, #edges do
@@ -115,7 +117,7 @@ function WE.parseFaces(object, we_vertices)
 				next = edges[i+1]
 			end
 
-			edges[i]:addFace(face, prev, next)
+			we_edges[edges[i]]:addFace(face, prev, next)
 		end
 	end
 
@@ -147,6 +149,22 @@ function WE.traverse(face)
 	end
 
 	return adj
+end
+
+function WE.triangulate(face)
+	local vertices = {}
+	for _, v in ipairs(face.vertices) do
+		table.insert(vertices, v)
+	end
+
+	if #vertices < 3 then return {} end
+
+	local triangles = {}
+	for i = 2, #vertices-1 do
+		table.insert(triangles, { vertices[1], vertices[i], vertices[i+1] })
+	end
+
+	return triangles
 end
 
 return WE
