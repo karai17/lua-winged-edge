@@ -10,7 +10,7 @@ local we = require "libwe"
 local we_object = we.new("some_object.obj")
 
 for k, face in ipairs(obj.faces) do
-	local adjacent = WE.traverse(face)
+	local adjacent = WE.traverse(face, we_object.faces, we_object.edges)
 
 	for _, f in ipairs(adjacent) do
 		print(k, f)
