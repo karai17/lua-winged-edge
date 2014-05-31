@@ -5,6 +5,7 @@ This code is licensed under the [**MIT Open Source License**][MIT].
 
 
 Copyright (c) 2014 Landon Manning - LManning17@gmail.com - [LandonManning.com][LM]
+                   Colby Klein - [excessive.io][EX]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,3 +28,4 @@ THE SOFTWARE.
 
 [MIT]: http://www.opensource.org/licenses/mit-license.html
 [LM]: http://LandonManning.com
+[EX]: http://excessive.io
