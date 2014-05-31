@@ -5,15 +5,15 @@ Lua Winged Edge piggy backs off of my [**Wavefront Object Loader**][OBJ] library
 Quick Example
 --
 ```lua
-local we = require "libwe"
+local we = require "winged-edge"
 
-local we_object = we.new("some_object.obj")
+local object = we.new("some_object.obj")
 
-for k, face in ipairs(obj.faces) do
-	local adjacent = WE.traverse(face, we_object.faces, we_object.edges)
+for face in ipairs(obj.faces) do
+	local adjacent = we.traverse(face, object)
 
-	for _, f in ipairs(adjacent) do
-		print(k, f)
+	for _, adj_face in ipairs(adjacent) do
+		print(face, adj_face)
 	end
 end
 ```
