@@ -30,7 +30,7 @@ local path = ... .. "."
 local external = path .. "external."
 local WE = {}
 
-WE.version = "0.0.4"
+WE.version = "0.0.5"
 
 local Vertex = require(path .. "vertex")
 local Edge = require(path .. "edge")
@@ -39,30 +39,28 @@ local obj_loader = require(external .. "obj_loader")
 local Vec3 = require(external .. "hump.vector3d")
 
 function WE.new(file)
-	local object = obj_loader.load(file)
+	local data = obj_loader.load(file)
 	local we_object = {}
 	
-	we_object.vertices = WE.parseVertices(object)
-	we_object.edges, we_object.faces = WE.parseFaces(object, we_object.vertices)
+	WE.parseVertices(data, we_object)
+	WE.parseFaces(data, we_object)
 
 	return we_object
 end
 
-function WE.parseVertices(object)
-	local vertices = {}
+function WE.parseVertices(data, object)
+	object.vertices = {}
 
-	for _, v in ipairs(object.v) do
-		table.insert(vertices, Vertex(Vec3(v.x, v.y, v.z)))
+	for _, v in ipairs(data.v) do
+		table.insert(object.vertices, Vertex(Vec3(v.x, v.y, v.z)))
 	end
-
-	return vertices
 end
 
-function WE.parseFaces(object, we_vertices)
-	local faces = {}
-	local we_edges = {}
+function WE.parseFaces(data, object)
+	object.edges = {}
+	object.faces = {}
 
-	for k, f in ipairs(object.f) do
+	for k, f in ipairs(data.f) do
 		local vertices = {}
 		local edges = {}
 		
@@ -81,7 +79,7 @@ function WE.parseFaces(object, we_vertices)
 			table.insert(vertices, v1)
 			local edge = Edge(v1, v2)
 
-			for k, e in ipairs(we_edges) do
+			for k, e in ipairs(object.edges) do
 				if (
 					e.vertices[1] == edge.vertices[1] and
 					e.vertices[2] == edge.vertices[2]
@@ -96,12 +94,12 @@ function WE.parseFaces(object, we_vertices)
 			end
 
 			if not found then
-				table.insert(we_edges, edge)
-				table.insert(edges, #we_edges)
+				table.insert(object.edges, edge)
+				table.insert(edges, #object.edges)
 			end
 		end
 
-		table.insert(faces, Face(vertices, edges))
+		table.insert(object.faces, Face(vertices, edges))
 
 		for i=1, #edges do
 			local prev, next
@@ -118,26 +116,24 @@ function WE.parseFaces(object, we_vertices)
 				next = edges[i+1]
 			end
 
-			we_edges[edges[i]]:addFace(k, prev, next)
+			object.edges[edges[i]]:addFace(k, prev, next)
 		end
 	end
 
-	for i, e in ipairs(we_edges) do
+	for i, e in ipairs(object.edges) do
 		for _, v in pairs(e.vertices) do
-			we_vertices[v]:addEdge(i)
+			object.vertices[v]:addEdge(i)
 		end
 	end
-
-	return we_edges, faces
 end
 
-function WE.traverse(face, faces, edges)
+function WE.traverse(face, object)
 	local adj = {}
-	local first = faces[face].edges[1]
+	local first = object.faces[face].edges[1]
 	local n = 0
 
 	local function next(edge)
-		for k, f in pairs(edges[edge].faces) do
+		for k, f in pairs(object.edges[edge].faces) do
 			if f.face == face then
 				n = k
 			else
@@ -145,7 +141,7 @@ function WE.traverse(face, faces, edges)
 			end
 		end
 
-		return edges[edge].faces[n].next
+		return object.edges[edge].faces[n].next
 	end
 
 	local edge = next(first)
@@ -157,9 +153,9 @@ function WE.traverse(face, faces, edges)
 	return adj
 end
 
-function WE.triangulate(face)
+function WE.triangulate(face, object)
 	local vertices = {}
-	for _, v in ipairs(face.vertices) do
+	for _, v in ipairs(object.faces[face].vertices) do
 		table.insert(vertices, v)
 	end
 
