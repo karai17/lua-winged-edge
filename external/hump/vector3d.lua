@@ -38,7 +38,7 @@ end
 local zero = new(0,0,0)
 
 local function isvector(v)
-	return getmetatable(v) == vector
+	return type(v) == 'table' and type(v.x) == 'number' and type(v.y) == 'number' and type(v.z) == 'number'
 end
 
 function vector:clone()

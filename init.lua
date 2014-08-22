@@ -30,7 +30,7 @@ local path = ... .. "."
 local external = path .. "external."
 local WE = {}
 
-WE.version = "0.0.5"
+WE.version = "0.0.6"
 
 local Vertex = require(path .. "vertex")
 local Edge = require(path .. "edge")
