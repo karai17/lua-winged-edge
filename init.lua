@@ -5,7 +5,6 @@ Lua Winged Edge is licensed under the MIT Open Source License.
 ------------------------------------------------------------------------------
 
 Copyright (c) 2014 Landon Manning - LManning17@gmail.com - LandonManning.com
-                   Colby Klein - excessive.io
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +29,7 @@ local path = ... .. "."
 local external = path .. "external."
 local WE = {}
 
-WE.version = "0.0.6"
+WE._VERSION = "0.0.7"
 
 local Vertex = require(path .. "vertex")
 local Edge = require(path .. "edge")
@@ -169,6 +168,7 @@ function WE.triangulate(face, object)
 	return triangles
 end
 
+-- http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
 function WE.intersect(p, d, triangle)
 	assert(#triangle == 3)
 
@@ -206,7 +206,7 @@ function WE.intersect(p, d, triangle)
 	t = f * (e2*q)
 
 	if t > 0.00001 then
-		return true -- we've got a hit!
+		return true, p + t * d -- we've got a hit!
 	else
 		return false -- the line intersects, but it's behind the point
 	end
