@@ -103,6 +103,10 @@ function vector.permul(a,b)
 	return new(a.x*b.x, a.y*b.y, a.z*b*z)
 end
 
+function vector:tuple()
+	return self.x, self.y, self.z
+end
+
 function vector:len2()
 	return self.x * self.x + self.y * self.y + self.z * self.z
 end
@@ -135,26 +139,24 @@ function vector:normalize_inplace()
 	return self
 end
 
-function vector:normalized()
+function vector:normalize()
 	return self:clone():normalize_inplace()
 end
-
 
 function vector:rotated(phi, axis)
 	if axis == nil then return self end
 
-	local u = axis:normalized() or Vector(0,0,1) -- default is to rotate in the xy plane
+	local u = axis:normalize() or Vector(0,0,1) -- default is to rotate in the xy plane
 	local c, s = cos(phi), sin(phi)
 
 	-- Calculate generalized rotation matrix
-	local m1 = Vector((c + u.x * u.x * (1-c)),       (u.x * u.y * (1-c) - u.z * s), (u.x * u.z * (1-c) + u.y * s))
-	local m2 = Vector((u.y * u.x * (1-c) + u.z * s), (c + u.y * u.y * (1-c)),       (u.y * u.z * (1-c) - u.x * s))
-	local m3 = Vector((u.z * u.x * (1-c) - u.y * s), (u.z * u.y * (1-c) + u.x * s), (c + u.z * u.z * (1-c))      )
+	local m1 = new((c + u.x * u.x * (1-c)),       (u.x * u.y * (1-c) - u.z * s), (u.x * u.z * (1-c) + u.y * s))
+	local m2 = new((u.y * u.x * (1-c) + u.z * s), (c + u.y * u.y * (1-c)),       (u.y * u.z * (1-c) - u.x * s))
+	local m3 = new((u.z * u.x * (1-c) - u.y * s), (u.z * u.y * (1-c) + u.x * s), (c + u.z * u.z * (1-c))      )
 
 	-- Return rotated vector
-	return Vector( m1 * self, m2 * self, m3 * self )
+	return new( m1 * self, m2 * self, m3 * self )
 end
-
 
 function vector:rotate_inplace(phi, axis)
 	self = self:rotated(phi, axis)

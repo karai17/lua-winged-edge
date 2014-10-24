@@ -1,4 +1,8 @@
---[[
+local path = (...):gsub('%.init$', '') .. "."
+local external = path .. "external."
+local WE = {}
+
+WE._LICENSE = [[
 ------------------------------------------------------------------------------
 Lua Winged Edge is licensed under the MIT Open Source License.
 (http://www.opensource.org/licenses/mit-license.html)
@@ -23,19 +27,15 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-]]--
+]]
+WE._VERSION = "0.0.8"
 
-local path = ... .. "."
-local external = path .. "external."
-local WE = {}
-
-WE._VERSION = "0.0.7"
-
-local Vertex = require(path .. "vertex")
-local Edge = require(path .. "edge")
-local Face = require(path .. "face")
 local obj_loader = require(external .. "obj_loader")
+local Class = require(external .. "hump.class")
 local Vec3 = require(external .. "hump.vector3d")
+local Vertex = Class {}
+local Edge = Class {}
+local Face = Class {}
 
 function WE.new(file)
 	local data = obj_loader.load(file)
@@ -126,6 +126,18 @@ function WE.parseFaces(data, object)
 	end
 end
 
+function WE.get_vertex(vertex, object)
+	return object.vertices[vertex]
+end
+
+function WE.get_edge(edge, object)
+	return object.edges[edge]
+end
+
+function WE.get_face(face, object)
+	return object.faces[face]
+end
+
 function WE.traverse(face, object)
 	local adj = {}
 	local first = object.faces[face].edges[1]
@@ -206,10 +218,37 @@ function WE.intersect(p, d, triangle)
 	t = f * (e2*q)
 
 	if t > 0.00001 then
-		return true, p + t * d -- we've got a hit!
+		return p + t * d -- we've got a hit!
 	else
 		return false -- the line intersects, but it's behind the point
 	end
+end
+
+function Vertex:init(pos)
+	self.edges = {}
+	self.position = pos
+end
+
+function Vertex:addEdge(edge)
+	table.insert(self.edges, edge)
+end
+
+function Edge:init(v1, v2)
+	self.vertices = {v1, v2}
+	self.faces = {}
+end
+
+function Edge:addFace(face, prev, next)
+	table.insert(self.faces, {
+		face = face,
+		prev = prev, -- previous edge
+		next = next, -- next edge
+	})
+end
+
+function Face:init(vertices, edges)
+	self.vertices = vertices
+	self.edges = edges
 end
 
 return WE
