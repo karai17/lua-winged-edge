@@ -1,61 +1,32 @@
 local path = (...):gsub('%.init$', '') .. "."
 local external = path .. "external."
-local WE = {}
-
-WE._LICENSE = [[
-------------------------------------------------------------------------------
-Lua Winged Edge is licensed under the MIT Open Source License.
-(http://www.opensource.org/licenses/mit-license.html)
-------------------------------------------------------------------------------
-
-Copyright (c) 2014 Landon Manning - LManning17@gmail.com - LandonManning.com
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-]]
-WE._VERSION = "0.0.8"
-
 local obj_loader = require(external .. "obj_loader")
-local Class = require(external .. "hump.class")
-local Vec3 = require(external .. "hump.vector3d")
-local Vertex = Class {}
-local Edge = Class {}
-local Face = Class {}
+local cpml = require(external .. "cpml")
+local WE = {
+	_VERSION = "0.1.0",
+	_LICENSE = "Lua Winged Edge is licensed under the MIT Open Source License. See the LICENSE.md file for more information.",
+	_DESCRIPTION = "A winged edge implementation that provides relational data between vertices, edges, and faces of a polygon structure.",
+}
 
 function WE.new(file)
 	local data = obj_loader.load(file)
 	local we_object = {}
 	
-	WE.parseVertices(data, we_object)
-	WE.parseFaces(data, we_object)
+	WE.parse_vertices(data, we_object)
+	WE.parse_faces(data, we_object)
 
 	return we_object
 end
 
-function WE.parseVertices(data, object)
+function WE.parse_vertices(object, data)
 	object.vertices = {}
 
 	for _, v in ipairs(data.v) do
-		table.insert(object.vertices, Vertex(Vec3(v.x, v.y, v.z)))
+		table.insert(object.vertices, WE.new_vertex(cpml.vec3(v.x, v.y, v.z)))
 	end
 end
 
-function WE.parseFaces(data, object)
+function WE.parse_faces(object, data)
 	object.edges = {}
 	object.faces = {}
 
@@ -76,7 +47,7 @@ function WE.parseFaces(data, object)
 			end
 
 			table.insert(vertices, v1)
-			local edge = Edge(v1, v2)
+			local edge = WE.new_edge(v1, v2)
 
 			for k, e in ipairs(object.edges) do
 				if (
@@ -98,7 +69,7 @@ function WE.parseFaces(data, object)
 			end
 		end
 
-		table.insert(object.faces, Face(vertices, edges))
+		table.insert(object.faces, WE.new_face(vertices, edges))
 
 		for i=1, #edges do
 			local prev, next
@@ -115,30 +86,18 @@ function WE.parseFaces(data, object)
 				next = edges[i+1]
 			end
 
-			object.edges[edges[i]]:addFace(k, prev, next)
+			WE.edge_add_face(object.edges[edges[i]], k, prev, next)
 		end
 	end
 
 	for i, e in ipairs(object.edges) do
 		for _, v in pairs(e.vertices) do
-			object.vertices[v]:addEdge(i)
+			WE.vertex_add_edge(object.vertices[v], i)
 		end
 	end
 end
 
-function WE.get_vertex(vertex, object)
-	return object.vertices[vertex]
-end
-
-function WE.get_edge(edge, object)
-	return object.edges[edge]
-end
-
-function WE.get_face(face, object)
-	return object.faces[face]
-end
-
-function WE.traverse(face, object)
+function WE.traverse(object, face)
 	local adj = {}
 	local first = object.faces[face].edges[1]
 	local n = 0
@@ -164,7 +123,7 @@ function WE.traverse(face, object)
 	return adj
 end
 
-function WE.triangulate(face, object)
+function WE.triangulate(object, face)
 	local vertices = {}
 	for _, v in ipairs(object.faces[face].vertices) do
 		table.insert(vertices, v)
@@ -180,75 +139,53 @@ function WE.triangulate(face, object)
 	return triangles
 end
 
--- http://www.lighthouse3d.com/tutorials/maths/ray-triangle-intersection/
-function WE.intersect(p, d, triangle)
-	assert(#triangle == 3)
-
-	local h, s, q = Vec3(), Vec3(), Vec3()
-	local a, f, u, v
-
-	local e1 = triangle[2] - triangle[1]
-	local e2 = triangle[3] - triangle[1]
-
-	h = d:clone():cross(e2)
-
-	a = (e1*h) -- dot product
-
-	if a > -0.00001 and a < 0.00001 then
-		return false
-	end
-
-	f = 1/a
-	s = p - triangle[1]
-	u = f * (s*h)
-
-	if u < 0 or u > 1 then
-		return false
-	end
-
-	q = s:clone():cross(e1)
-	v = f * (d*q)
-
-	if v < 0 or u + v > 1 then
-		return false
-	end
-
-	-- at this stage we can compute t to find out where
-	-- the intersection point is on the line
-	t = f * (e2*q)
-
-	if t > 0.00001 then
-		return p + t * d -- we've got a hit!
-	else
-		return false -- the line intersects, but it's behind the point
-	end
+function WE.intersect(ray, triangle)
+	return cpml.intersect.ray_triangle(ray, triangle)
 end
 
-function Vertex:init(pos)
-	self.edges = {}
-	self.position = pos
+function WE.new_vertex(position)
+	return {
+		edges = {},
+		position = position,
+	}
 end
 
-function Vertex:addEdge(edge)
-	table.insert(self.edges, edge)
+function WE.get_vertex(object, vertex)
+	return object.vertices[vertex]
 end
 
-function Edge:init(v1, v2)
-	self.vertices = {v1, v2}
-	self.faces = {}
+function WE.vertex_add_edge(vertex, edge)
+	table.insert(vertex.edges, edge)
 end
 
-function Edge:addFace(face, prev, next)
-	table.insert(self.faces, {
+function WE.new_edge(v1, v2)
+	return {
+		vertices = { v1, v2 },
+		faces = {},
+	}
+end
+
+function WE.get_edge(object, edge)
+	return object.edges[edge]
+end
+
+function WE.edge_add_face(edge, face, prev, next)
+	table.insert(edge.faces, {
 		face = face,
 		prev = prev, -- previous edge
 		next = next, -- next edge
 	})
 end
 
-function Face:init(vertices, edges)
-	self.vertices = vertices
-	self.edges = edges
+function WE.new_face(vertices, edges)
+	return {
+		vertices = vertices,
+		edges = edges,
+	}
+end
+
+function WE.get_face(object, face)
+	return object.faces[face]
 end
 
 return WE
