@@ -24,6 +24,6 @@ end
 
 This code is licensed under the [**MIT Open Source License**][MIT]. Check out the LICENSE file for more information.
 
-[OBJ]: https://github.com/karai17/Lua-obj-loader
-[DOX]: http://karai17.github.io/Lua-Winged-Edge/
+[OBJ]: https://github.com/karai17/lua-obj
+[DOX]: http://karai17.github.io/lua-winged-edge/
 [MIT]: http://www.opensource.org/licenses/mit-license.html
